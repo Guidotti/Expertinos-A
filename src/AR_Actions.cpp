@@ -210,10 +210,10 @@ SoccerCommand BasicPlayer::lookActions( int numAction, bool withBall )
 			return searchBall();
 		case 99:
 			return turnNeckToObject( OBJECT_BALL, turnBodyToObject( OBJECT_BALL ) );
-		//case 98:MoveToBallLineLONG
-		//case 99:MoveToBallLineMED
-		//case 100:MoveToBallLineSHO
-		//case 101:MoveToBallLineVSHO
+		//case 100:MoveToBallLineLONG
+		//case 101:MoveToBallLineMED
+		//case 102:MoveToBallLineSHO
+		//case 103:MoveToBallLineVSHO
 		}
 	}
 	cerr << "ERROR Invalid CMD_ACT_NUM" << endl;

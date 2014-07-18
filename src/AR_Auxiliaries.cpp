@@ -167,6 +167,38 @@ ObjectT BasicPlayer::getFourthClosestInSetTo ( ObjectSetT set, ObjectT obj,
 		return fourthClosestObject;
 }
 
+bool BasicPlayer::AR_isBallInOurPossesion()
+{
+	if( WM->isDeadBallUs() )
+		return true;
+	else if( WM->isDeadBallThem() )
+		return false;
+
+	if( SoccerTypes::isTeammate( WM->getClosestInSetTo(OBJECT_SET_PLAYERS, OBJECT_BALL) )
+	&& !isBallFloating())
+		return true;
+	else if(areWeLastTeamBallHolder())
+		return true;
+	else
+	{
+		if(!SoccerTypes::isTeammate( WM->getClosestInSetTo(OBJECT_SET_PLAYERS, OBJECT_BALL) )
+		&& !isBallFloating())
+			return false;
+		else if(!areWeLastTeamBallHolder())
+			return false;
+	}
+	return false;
+}
+
+bool BasicPlayer::areWeLastTeamBallHolder()
+{
+	if( SoccerTypes::isTeammate( WM->getClosestInSetTo(OBJECT_SET_PLAYERS, OBJECT_BALL) ))
+		return true;
+	else if(AR->prevPossesion && isBallFloating())
+		return true;
+	return false;
+}
+
 bool BasicPlayer::isBallFloating()
 {
 	double dConfThr = WM->PS->getPlayerConfThr();

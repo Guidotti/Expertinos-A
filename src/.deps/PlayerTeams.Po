@@ -126,7 +126,12 @@ PlayerTeams.o: PlayerTeams.cpp Player.h BasicPlayer.h ActHandler.h \
  /usr/include/x86_64-linux-gnu/bits/waitstatus.h /usr/include/alloca.h \
  /usr/include/x86_64-linux-gnu/bits/stdlib.h /usr/include/string.h \
  /usr/include/x86_64-linux-gnu/bits/string3.h \
- /usr/lib/gcc/x86_64-linux-gnu/4.6/include/float.h
+ /usr/lib/gcc/x86_64-linux-gnu/4.6/include/float.h \
+ /usr/include/c++/4.6/vector /usr/include/c++/4.6/bits/stl_construct.h \
+ /usr/include/c++/4.6/bits/stl_uninitialized.h \
+ /usr/include/c++/4.6/bits/stl_vector.h \
+ /usr/include/c++/4.6/bits/stl_bvector.h \
+ /usr/include/c++/4.6/bits/vector.tcc
 
 Player.h:
 
@@ -475,3 +480,15 @@ Formations.h:
 /usr/include/x86_64-linux-gnu/bits/string3.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/4.6/include/float.h:
+
+/usr/include/c++/4.6/vector:
+
+/usr/include/c++/4.6/bits/stl_construct.h:
+
+/usr/include/c++/4.6/bits/stl_uninitialized.h:
+
+/usr/include/c++/4.6/bits/stl_vector.h:
+
+/usr/include/c++/4.6/bits/stl_bvector.h:
+
+/usr/include/c++/4.6/bits/vector.tcc:

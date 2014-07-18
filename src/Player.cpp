@@ -127,6 +127,7 @@ void Player::mainLoop( )
   if( WM->getPlayerNumber() > 1 )
   {
 	  AR->loadMatrixQ( WM->getPlayerNumber() );
+	  AR->loadMatrixH( WM->getPlayerNumber() );
 	  AR->loadInfo( WM->getPlayerNumber() );
 	  AR->loadReport( WM->getPlayerNumber() );
   }
@@ -221,7 +222,12 @@ void Player::mainLoop( )
   if( WM->getPlayerNumber() > 1 )
   {
 	  AR->saveMatrixQ( WM->getPlayerNumber() );
+	  AR->saveMatrixH( WM->getPlayerNumber() );
 	  AR->saveInfo( WM->getPlayerNumber() );
+	  AR->VetorRelatorio[num_acoes+3] = AR->Epsilon;
+	  AR->VetorRelatorio[num_acoes+4] = AR->porcentagemNaoNulosNaMatrizQ;
+	  AR->VetorRelatorio[num_acoes+5] = AR->porcentagemNaoNulosNaMatrizH;
+	  // /\ Importante estes tres (/\) comandos virem antes de saveReport!
 	  AR->saveReport( WM->getPlayerNumber() );
   }
   // shutdow, print hole and number of players seen statistics

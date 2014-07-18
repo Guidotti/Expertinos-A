@@ -9,6 +9,7 @@
 #include <time.h>
 #include <string.h>
 #include <float.h> // for DBL_MAX
+#include <vector> // for  Heuristics
 
 /////////////////////////////// Constantes /////////////////////////////////////
 // Não mudar o nome dessas variaveis!
@@ -47,7 +48,8 @@ enum MoveDistT {
 /******************** CLASS APRENDIZAGEM_REFORCO ******************************/
 /******************************************************************************/
 /* Esta classe possui as principais funções e variáveis para executar o algoritmo
- * Q_Learning.*/
+ * Q_Learning.
+ * */
 
 class Aprendizagem_Reforco
 {
@@ -62,17 +64,20 @@ public:
 	int SaldoGol_atual; 						// Armazena o saldo de gols atual
 	int ActionTaken;							// Armazena a acao tomada para calcular o Q
 	int PosActionTaken;
-	int lastplayerball;
 	unsigned long long prevIndex;				// Armazena o indece de estado CMAC em que a acao foi tomada
 	unsigned long long posPrevIndex;
 	bool prevPossesion;							// Armazena se a gente estava com a bola no ciclo anterior, usado
 												// 		para verificar se perdeu/recuperou a bola.
+	bool changePossesion;						// Verdadeiro se houve mudanca de dominio de bola
 	bool checkState;							// True se foi executada uma ação que vai ser considerada na AR
 	bool posCheckState;
 	double Epsilon;								// Utilizado na regra de transição de estado
+	double porcentagemNaoNulosNaMatrizQ	;		// Relatorio
+	double porcentagemNaoNulosNaMatrizH;		// Relatorio
 	unsigned long long indiceCMAC_ant[lut_m];	// Indeces dos estado (CMAC)
 	unsigned long long posindiceCMAC_ant[lut_m];// Indeces dos estado (CMAC) - Para calcular valor Q de acao com bola flutuante
 	double MatrizQ[num_linesQ][num_acoes];		// Matriz Q
+	double MatrizH[num_linesQ][num_acoes];		// Matriz H
 
 	unsigned long long Num_Jogos;				// Numero de jogos executados no total
 	unsigned long long Num_Itera;				// Numero de iterações executadas no total
@@ -80,7 +85,8 @@ public:
 	// Vetor que armazena o numero de vezes que cada acao foi tomada, e o total de acoes tomadas, durante a partida, sendo:
 	// Indice: 0 - total de ações | num_acao + 1 - gols feitos | num_acao + 2 - gols sofridos. Demais indeces representa
 	// o numero de vezes que uma ação (de determinado indice) foi executada.
-	unsigned long VetorRelatorio[num_acoes+3];
+	// Dois ultimos indeces reference aos valores de epsilon e exploracao da matrizQ/H
+	double VetorRelatorio[num_acoes+6];
 
 	/*
 	 * ####################################################
@@ -90,27 +96,46 @@ public:
 
 	Aprendizagem_Reforco                    (                            	   	);
 	~Aprendizagem_Reforco                   (                             	  	);
-	unsigned long long GetState				( int vetorEstado[num_chaves]		); // - Nao utilizado (para q-learning puro)
+	
+	struct HeuristicVector
+	{
+		unsigned long long indexCMAC_acao[lut_m]; // verificar o antcmacindex utilizado em assignQvalue em ar_base!!!11
+		unsigned long long indexCMAC_verificacao[lut_m];
+		int acao;
+		bool bolaViajando;
+		double reforco;
+	};
+
+	std::vector<HeuristicVector> vetorHeuristica;
+	
+	unsigned long long GetState			( int vetorEstado[num_chaves]		); // - Nao utilizado (para q-learning puro)
 
 	void LookUpTable						( int table[lut_m][lut_resolution]	);
-	unsigned long long ConcatValues			( int *VectorValues, int num		);
+	unsigned long long ConcatValues		( int *VectorValues, int num		);
 	bool GetIndexCMAC						( int vetorEstado[num_chaves],
-											  unsigned long long* CMACindex		);
+											  unsigned long long* CMACindex	);
 	int GetBestAction						( unsigned long long* IndexesCMAC,
 											  unsigned long long &IndexAct,
 											  bool kickable = true				);
-	void AssignQValue						( unsigned long long* IndexesCMAC,
-											  unsigned long long IndexAct,
-											  int numAct, double Reforco 		);
+	void AssignMatrixesValues			(									);
+	void AssignValue						( unsigned long long* IndexesCMAC,
+											  unsigned long long* IndexAct,
+											  int numAct, double Reforco,
+											  double Matriz[num_linesQ][num_acoes] );
 	bool RandomAction						( int seed							);
-	void UpdateEpsilon						(									);
+	void UpdateEpsilon					(									);
 
+	void AddElementToVector				( vector<HeuristicVector> &VetorParam );
+	void DeleteVector						( vector<HeuristicVector> &VetorParam );
+	void DeleteLastElementInVector		( vector<HeuristicVector> &vetorParam );
 	void loadMatrixQ						( int playerNum						);
 	void saveMatrixQ						( int playerNum						);
+	void loadMatrixH						( int playerNum						);
+	void saveMatrixH						( int playerNum						);
 	void loadInfo							( int playerNum						);
 	void saveInfo							( int playerNum						);
-	void loadReport							( int playerNum						);
-	void saveReport							( int playerNum						);
+	void loadReport						( int playerNum						);
+	void saveReport						( int playerNum						);
 };
 
 extern Logger Log; /*!< This is a reference to Logger to write log info to*/
@@ -419,11 +444,16 @@ protected:
 		  	  	  	  	  	  	  	  	  	  ObjectT        o,
 		  	  	  	  	  	  	  	  	  	  double         *dDist = NULL,
 		  	  	  	  	  	  	  	  	  	  double         dConfThr = -1.0  );
+  bool AR_isBallInOurPossesion();
+  bool areWeLastTeamBallHolder();
+
+
   bool isBallFloating					  ();
   /// Other
 
-	double GetReinforcement				  (bool ChangePossesion,
-											  bool SaldoGol, int Action		  );
+  bool CheckIfNeedsNewElementInList (bool Possesion);
+  double GetReinforcement				  (bool ChangePossesion,
+		  bool SaldoGol, int Action		  );
 } ;
 
 #endif

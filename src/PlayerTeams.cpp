@@ -6,8 +6,7 @@ SoccerCommand Player::deMeer5(  )
 {
 	// Variaveis do jogo e do agente
 	bool Kickable = WM->isBallKickable() ;
-	bool Possesion = WM->isBallInOurPossesion();
-	bool changePossesion;
+	bool Possesion = AR_isBallInOurPossesion();
 	int AgentNumber = WM->getPlayerNumber() ;
 	int Cycle = WM->getCurrentCycle() ;
 	SoccerCommand soc(CMD_ILLEGAL);
@@ -30,21 +29,24 @@ SoccerCommand Player::deMeer5(  )
 
 	if( WM->isBeforeKickOff( ) )
 	{
-		if( WM->isKickOffUs( ) && AgentNumber == 9 ) // 9 takes kick
+		AR->Ciclo_atual = 1;
+		if( WM->isKickOffUs( ) ) // 9 takes kick
 		{
-			if( Kickable )
+			if( AgentNumber == 9 )
 			{
-				soc = lookActions( 5 ) ; // kick maximal
-				Log.log( 100, "take kick off" );
+				if( Kickable )
+				{
+					soc = lookActions( 5 ) ; // kick maximal
+					Log.log( 100, "take kick off" );
+				}
+				else
+				{
+					soc = intercept( false );
+					Log.log( 100, "move to ball to take kick-off" );
+				}
+				ACT->putCommandInQueue( soc );
+				ACT->putCommandInQueue( turnNeckToObject( OBJECT_BALL, soc ) );
 			}
-			else
-			{
-				soc = intercept( false );
-				Log.log( 100, "move to ball to take kick-off" );
-			}
-			ACT->putCommandInQueue( soc );
-			ACT->putCommandInQueue( turnNeckToObject( OBJECT_BALL, soc ) );
-			AR->Ciclo_atual = 1;
 			AR->prevPossesion = true;
 			return soc;
 		}
@@ -64,10 +66,45 @@ SoccerCommand Player::deMeer5(  )
 	}
 	else if( AR->Ciclo_ant != AR->Ciclo_atual )
 	{
+
 		AR->SaldoGol_ant = AR->SaldoGol_atual ;
 		AR->SaldoGol_atual = WM->getGoalDiff( ) ; // Atualiza o saldo de gols
 
-		if( AR->SaldoGol_ant != AR->SaldoGol_atual )
+		if( AR->prevPossesion != Possesion )
+		{
+			AR->changePossesion = true;
+		}
+		else
+			AR->changePossesion = false;
+
+		/*
+		if(AgentNumber == 8) // exemplo utilizacao do changepossesion
+		{
+			if( Possesion == true )
+			{
+				if(AR->changePossesion == true )
+				{
+					cerr << "Recuperamos a bola\n";
+				}
+				else
+				{
+					cerr << "Estamos com a bola\n";
+				}
+			}
+			else
+			{
+				if(AR->changePossesion == true )
+				{
+					cerr << "Eles recuperaram a bola\n";
+				}
+				else
+				{
+					cerr << "Eles estao com a bola\n";
+				}
+			}
+		}*/
+
+		if( AR->SaldoGol_ant != AR->SaldoGol_atual ) // Calculo do saldo de gol
 		{
 			if( AR->SaldoGol_ant > AR->SaldoGol_atual )
 				AR->VetorRelatorio[num_acoes+2]++;
@@ -88,53 +125,33 @@ SoccerCommand Player::deMeer5(  )
 		}
 		else if ( AR->GetIndexCMAC( estado, indiceCMAC ) ) // Recebendo indice do estado do CMAC:
 		{
-			if( AR->prevPossesion != Possesion )
-			{
-				changePossesion = true;
-			}
-
-
 			// Atribuição do valor Q:
-			if( (AR->ActionTaken <= 93 && !isBallFloating() && !AR->posCheckState) || AR->ActionTaken > 93)
+			if(CheckIfNeedsNewElementInList( Possesion ))
 			{
-				if( AR->checkState )
+				if( AR->vetorHeuristica.size() > 0 )
 				{
-					AR->AssignQValue( indiceCMAC, AR->prevIndex, AR->ActionTaken, GetReinforcement( changePossesion,
-							(AR->SaldoGol_atual > AR->SaldoGol_ant), AR->ActionTaken ) );
+					// Complementa informacao do elemento anterior
+					for( int i = 0; i < lut_m; i++  )
+						AR->vetorHeuristica.back().indexCMAC_verificacao[i] = indiceCMAC[i];
+					AR->vetorHeuristica.back().bolaViajando = isBallFloating();
+					AR->vetorHeuristica.back().reforco = 0.0;
 				}
+				// Adiciona novo elemento
+				AR->AddElementToVector(AR->vetorHeuristica);
 			}
-			else if( !AR->posCheckState && AR->checkState && isBallFloating() )
+			else
 			{
-				AR->PosActionTaken = AR->ActionTaken;
-				AR->posPrevIndex = AR->prevIndex;
-				AR->posCheckState = true;
-				if( AR->ActionTaken > 93 )
-				{
-					AR->AssignQValue( indiceCMAC, AR->prevIndex, AR->ActionTaken, GetReinforcement( changePossesion,
-							(AR->SaldoGol_atual > AR->SaldoGol_ant), AR->ActionTaken ) );
-				}
-			}
-			else if( AR->posCheckState && isBallFloating() )
-			{
-				if( WM->getGlobalPosition( OBJECT_BALL ).getY() < SS->getGoalWidth()/2.0
-						&& WM->getGlobalPosition( OBJECT_BALL ).getY() > -SS->getGoalWidth()/2.0
-						&& WM->getGlobalPosition( OBJECT_BALL ).getX() >= ( PITCH_LENGTH/2.0 - 0.5 ) )
-				{
-					AR->AssignQValue( indiceCMAC, AR->prevIndex, AR->ActionTaken, 30.0 );
-				}
+				// Complementa informacao do elemento anterior
+				for( int i = 0; i < lut_m; i++  )
+					AR->vetorHeuristica.back().indexCMAC_verificacao[i] = indiceCMAC[i];
+				AR->vetorHeuristica.back().bolaViajando = isBallFloating();
 
-			}
-			else if( AR->posCheckState )
-			{
-				AR->AssignQValue( indiceCMAC, AR->posPrevIndex, AR->PosActionTaken, GetReinforcement( changePossesion,
-						(AR->SaldoGol_atual > AR->SaldoGol_ant), AR->PosActionTaken ) );
-				AR->posCheckState = false;
+				//Atualiza a matriz Q:
+				AR->AssignMatrixesValues();
 
-				if( AR->checkState && AR->ActionTaken > 93 )
-				{
-					AR->AssignQValue( indiceCMAC, AR->prevIndex, AR->ActionTaken, GetReinforcement( changePossesion,
-							(AR->SaldoGol_atual > AR->SaldoGol_ant), AR->ActionTaken ) );
-				}
+				// Deleta todos os elementos da lista e adiciona um novo
+				AR->DeleteVector(AR->vetorHeuristica);
+				AR->AddElementToVector(AR->vetorHeuristica);
 			}
 
 			unsigned long RandActSeed = ( AgentNumber + Cycle + WM->getAgentGlobalPosition().getMagnitude()*100
@@ -155,17 +172,12 @@ SoccerCommand Player::deMeer5(  )
 				}
 				ACT->putCommandInQueue( soc );
 				//ACT->putCommandInQueue( turnNeckToObject( OBJECT_BALL, soc ) );
-				AR->lastplayerball = AgentNumber;
-				AR->checkState = true;
-				AR->VetorRelatorio[AR->ActionTaken]++;
-				AR->VetorRelatorio[0]++;
 			}
 			else
 			{
-				if( ( WM->getFastestInSetTo( OBJECT_SET_TEAMMATES, OBJECT_BALL ) == WM->getAgentObjectType()
+				if( WM->getFastestInSetTo( OBJECT_SET_TEAMMATES, OBJECT_BALL ) == WM->getAgentObjectType()
 						&& !WM->isDeadBallThem()
-						&& WM->getClosestInSetTo( OBJECT_SET_TEAMMATES , OBJECT_BALL ) == WM->getAgentObjectType() )
-						|| ( WM->getRelativeDistance( OBJECT_BALL ) < SS->getMaximalKickDist()*5 ) ) // intercept possibility
+						&& WM->getClosestInSetTo( OBJECT_SET_TEAMMATES , OBJECT_BALL ) == WM->getAgentObjectType() ) // intercept possibility
 				{
 					Log.log( 100, "I am fastest to ball; can get there in %d cycles", iTmp );
 					soc = intercept( false );                      // intercept the ball
@@ -183,10 +195,7 @@ SoccerCommand Player::deMeer5(  )
 						ACT->putCommandInQueue( soc );               // dash as intended
 						ACT->putCommandInQueue( turnNeckToObject( OBJECT_BALL, soc ) );
 					}
-					AR->checkState = true;
 					AR->ActionTaken = 97;
-					AR->VetorRelatorio[AR->ActionTaken]++;
-					AR->VetorRelatorio[0]++;
 				}
 				else
 				{
@@ -201,13 +210,16 @@ SoccerCommand Player::deMeer5(  )
 						AR->ActionTaken = AR->GetBestAction( indiceCMAC, AR->prevIndex, false );
 						soc = lookActions( AR->ActionTaken , false );
 					}
-					AR->checkState = true;
-					AR->VetorRelatorio[AR->ActionTaken]++;
-					AR->VetorRelatorio[0]++;
 				}
 			}
-			for( int i = 0; i<lut_m; i++ )
-				AR->indiceCMAC_ant[i] = indiceCMAC[i];
+
+			AR->checkState = true;
+			AR->VetorRelatorio[AR->ActionTaken]++;
+			AR->VetorRelatorio[0]++;
+
+			AR->vetorHeuristica.back().acao = AR->ActionTaken;
+			for( int i = 0; i < lut_m; i++  )
+				AR->vetorHeuristica.back().indexCMAC_acao[i] = indiceCMAC[i];
 		}
 		else if( WM->getFastestInSetTo( OBJECT_SET_TEAMMATES, OBJECT_BALL, &iTmp )
 				== WM->getAgentObjectType()  && !WM->isDeadBallThem() && !WM->isBallKickable())
@@ -234,14 +246,17 @@ SoccerCommand Player::deMeer5(  )
 		{
 			soc = lookActions( 5 );
 			ACT->putCommandInQueue( soc );
+			AR->checkState = false;
 		}
 		else
 		{
 			soc = lookActions(97, false);
 			ACT->putCommandInQueue( soc );
+			AR->checkState = false;
 		}
 
 		AR->Num_Itera++; // Utilizado na regra de transição de estado (Epsilon)
+		AR->prevPossesion = Possesion;
 	}
 	else
 	{
