@@ -379,7 +379,7 @@ bool Aprendizagem_Reforco::RandomAction( int seed )
 	double prob = ((double) rand() / (RAND_MAX)); // pseudo-random value [0,1]
 	UpdateEpsilon();
 
-	if( prob <= Epsilon )
+	if( prob <= (1.0 - Epsilon) )
 	{
 		return true;
 	}
@@ -388,7 +388,7 @@ bool Aprendizagem_Reforco::RandomAction( int seed )
 
 void Aprendizagem_Reforco::UpdateEpsilon()
 {
-	Epsilon = 1.0/(exp( Num_Itera/pow10( 7 ) ));
+	Epsilon = 0.0; //1.0/(exp( Num_Itera/pow10( 7 ) ));
 }
 
 void Aprendizagem_Reforco::AddElementToVector( vector<HeuristicVector> &VetorParam )
